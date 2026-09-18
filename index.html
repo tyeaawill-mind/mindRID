@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="mindRID — a social place for thoughts you don't want to carry.">
+  <meta property="og:title" content="mindRID">
+  <meta property="og:description" content="Put your thoughts somewhere.">
+  <meta property="og:type" content="website">
+  <title>mindRID</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="#home" aria-label="mindRID home">mind<span>RID</span></a>
+      <label class="search"><span aria-hidden="true">⌕</span><input id="globalSearch" placeholder="Search mindRID" aria-label="Search mindRID"></label>
+      <button class="account-mini" id="accountNav" data-action="account">Sign in</button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <aside class="left-rail" aria-label="Primary navigation">
+      <a class="nav-item active" data-route="home" href="#home"><span>⌂</span> Home</a>
+      <a class="nav-item" data-route="explore" href="#explore"><span>⌕</span> Explore</a>
+      <a class="nav-item" data-route="notifications" href="#notifications"><span>♡</span> Notifications</a>
+      <a class="nav-item" data-route="messages" href="#messages"><span>✉</span> Messages</a>
+      <a class="nav-item" data-route="my" href="#my"><span>☷</span> My Whispers</a>
+      <a class="nav-item" data-route="saved" href="#saved"><span>☆</span> Saved</a>
+      <a class="nav-item" data-route="account" href="#account"><span>◉</span> Profile</a>
+      <a class="nav-item" data-route="settings" href="#settings"><span>⚙</span> Settings</a>
+      <button class="whisper-cta" data-action="compose">WHISPER</button>
+    </aside>
+
+    <section id="app" class="timeline" tabindex="-1"></section>
+
+    <aside class="right-rail">
+      <section class="side-card">
+        <h3>About mindRID</h3>
+        <p>A social place for thoughts you don't want to carry.</p>
+        <a href="#about">Learn more</a>
+      </section>
+      <section class="side-card" id="topicCard">
+        <h3>What people are thinking</h3>
+        <div class="topic">#wondering</div>
+        <div class="topic">#maybe</div>
+        <div class="topic">#life</div>
+      </section>
+      <footer class="side-footer"><a href="#privacy">Privacy</a><a href="#terms">Terms</a><a href="#contact">Contact</a><a href="#faq">FAQ</a><span>© mindRID</span></footer>
+    </aside>
+  </main>
+
+  <nav class="mobile-nav" aria-label="Mobile navigation">
+    <a href="#home">⌂<small>Home</small></a><a href="#explore">⌕<small>Explore</small></a><a href="#saved">☆<small>Saved</small></a><a href="#account">◉<small>Me</small></a>
+  </nav>
+  <button class="mobile-compose" data-action="compose" aria-label="Whisper">+</button>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="modal" class="modal hidden" aria-hidden="true"></div>
+</body>
+</html>
