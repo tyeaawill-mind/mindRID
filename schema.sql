@@ -80,6 +80,70 @@ create table if not exists public.blocks (
 );
 
 -- ============================================================
+-- PRIVATE MESSAGING
+-- One-to-one conversations. Membership is enforced by RLS; the
+-- start-conversation RPC creates both membership rows atomically.
+-- ============================================================
+
+create table if not exists public.conversations (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  last_message_at timestamptz not null default now()
+);
+
+create table if not exists public.conversation_members (
+  conversation_id uuid not null references public.conversations(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (conversation_id,user_id)
+);
+
+create table if not exists public.messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.conversations(id) on delete cascade,
+  sender_id uuid not null references auth.users(id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 5000),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create or replace function public.mindrid_is_conversation_member(cid uuid, viewer uuid)
+returns boolean language sql stable security definer set search_path=public as $$
+  select exists (select 1 from public.conversation_members cm where cm.conversation_id=cid and cm.user_id=viewer);
+$$;
+
+create or replace function public.mindrid_start_conversation(recipient uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path=public
+as $$
+declare
+  me uuid := auth.uid();
+  existing uuid;
+  cid uuid;
+begin
+  if me is null then raise exception 'Authentication required.'; end if;
+  if recipient is null or recipient=me then raise exception 'Invalid recipient.'; end if;
+  if not exists (select 1 from auth.users where id=recipient) then raise exception 'Recipient not found.'; end if;
+  select c.id into existing
+  from public.conversations c
+  where (select count(*) from public.conversation_members cm where cm.conversation_id=c.id)=2
+    and exists (select 1 from public.conversation_members cm where cm.conversation_id=c.id and cm.user_id=me)
+    and exists (select 1 from public.conversation_members cm where cm.conversation_id=c.id and cm.user_id=recipient)
+  order by c.updated_at desc limit 1;
+  if existing is not null then return existing; end if;
+  insert into public.conversations default values returning id into cid;
+  insert into public.conversation_members(conversation_id,user_id) values (cid,me),(cid,recipient);
+  return cid;
+end;
+$$;
+
+revoke execute on function public.mindrid_start_conversation(uuid) from public, anon;
+grant execute on function public.mindrid_start_conversation(uuid) to authenticated;
+
+-- ============================================================
 -- HELPER FUNCTIONS
 -- SECURITY DEFINER functions are used to avoid circular RLS
 -- evaluation between whispers and whisper_recipients.
@@ -116,25 +180,26 @@ security definer
 set search_path = public
 as $$
   select
-    viewer is not null
-    and (
-      whisper_author = viewer
-      or (
-        not public.mindrid_is_blocked(viewer, whisper_author)
-        and (
-          whisper_visibility = 'public'
-          or (
-            whisper_visibility = 'selected'
-            and exists (
-              select 1
-              from public.whisper_recipients r
-              where r.whisper_id = mindrid_can_view_whisper.whisper_id
-                and r.recipient_id = viewer
+    case
+      when viewer is null then whisper_visibility = 'public'
+      else
+        whisper_author = viewer
+        or (
+          not public.mindrid_is_blocked(viewer, whisper_author)
+          and (
+            whisper_visibility = 'public'
+            or (
+              whisper_visibility = 'selected'
+              and exists (
+                select 1
+                from public.whisper_recipients r
+                where r.whisper_id = mindrid_can_view_whisper.whisper_id
+                  and r.recipient_id = viewer
+              )
             )
           )
         )
-      )
-    );
+    end;
 $$;
 
 create or replace function public.mindrid_can_comment(
@@ -219,12 +284,15 @@ alter table public.blocks enable row level security;
 drop policy if exists profiles_select_public on public.profiles;
 drop policy if exists profiles_insert_own on public.profiles;
 drop policy if exists profiles_update_own on public.profiles;
+drop policy if exists profiles_select_public on public.profiles;
 create policy profiles_select_public
   on public.profiles for select
   using (true);
+drop policy if exists profiles_insert_own on public.profiles;
 create policy profiles_insert_own
   on public.profiles for insert
   with check (id = auth.uid());
+drop policy if exists profiles_update_own on public.profiles;
 create policy profiles_update_own
   on public.profiles for update
   using (id = auth.uid())
@@ -235,16 +303,20 @@ drop policy if exists private_identity_select_own on public.private_identity;
 drop policy if exists private_identity_insert_own on public.private_identity;
 drop policy if exists private_identity_update_own on public.private_identity;
 drop policy if exists private_identity_delete_own on public.private_identity;
+drop policy if exists private_identity_select_own on public.private_identity;
 create policy private_identity_select_own
   on public.private_identity for select
   using (user_id = auth.uid());
+drop policy if exists private_identity_insert_own on public.private_identity;
 create policy private_identity_insert_own
   on public.private_identity for insert
   with check (user_id = auth.uid());
+drop policy if exists private_identity_update_own on public.private_identity;
 create policy private_identity_update_own
   on public.private_identity for update
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
+drop policy if exists private_identity_delete_own on public.private_identity;
 create policy private_identity_delete_own
   on public.private_identity for delete
   using (user_id = auth.uid());
@@ -255,21 +327,25 @@ drop policy if exists whispers_insert_own on public.whispers;
 drop policy if exists whispers_update_own on public.whispers;
 drop policy if exists whispers_delete_own on public.whispers;
 
+drop policy if exists whispers_select_visible on public.whispers;
 create policy whispers_select_visible
   on public.whispers for select
   using (
     public.mindrid_can_view_whisper(author_id, visibility, id, auth.uid())
   );
 
+drop policy if exists whispers_insert_own on public.whispers;
 create policy whispers_insert_own
   on public.whispers for insert
   with check (author_id = auth.uid());
 
+drop policy if exists whispers_update_own on public.whispers;
 create policy whispers_update_own
   on public.whispers for update
   using (author_id = auth.uid())
   with check (author_id = auth.uid());
 
+drop policy if exists whispers_delete_own on public.whispers;
 create policy whispers_delete_own
   on public.whispers for delete
   using (author_id = auth.uid());
@@ -279,6 +355,7 @@ drop policy if exists whisper_recipients_select_related on public.whisper_recipi
 drop policy if exists whisper_recipients_insert_owner on public.whisper_recipients;
 drop policy if exists whisper_recipients_delete_owner on public.whisper_recipients;
 
+drop policy if exists whisper_recipients_select_related on public.whisper_recipients;
 create policy whisper_recipients_select_related
   on public.whisper_recipients for select
   using (
@@ -291,6 +368,7 @@ create policy whisper_recipients_select_related
     )
   );
 
+drop policy if exists whisper_recipients_insert_owner on public.whisper_recipients;
 create policy whisper_recipients_insert_owner
   on public.whisper_recipients for insert
   with check (
@@ -302,6 +380,7 @@ create policy whisper_recipients_insert_owner
     )
   );
 
+drop policy if exists whisper_recipients_delete_owner on public.whisper_recipients;
 create policy whisper_recipients_delete_owner
   on public.whisper_recipients for delete
   using (
@@ -319,12 +398,14 @@ drop policy if exists comments_insert_signed_in_visible on public.comments;
 drop policy if exists comments_update_own on public.comments;
 drop policy if exists comments_delete_own on public.comments;
 
+drop policy if exists comments_select_visible on public.comments;
 create policy comments_select_visible
   on public.comments for select
   using (
     public.mindrid_can_comment(whisper_id, auth.uid())
   );
 
+drop policy if exists comments_insert_signed_in_visible on public.comments;
 create policy comments_insert_signed_in_visible
   on public.comments for insert
   with check (
@@ -332,11 +413,13 @@ create policy comments_insert_signed_in_visible
     and public.mindrid_can_comment(whisper_id, auth.uid())
   );
 
+drop policy if exists comments_update_own on public.comments;
 create policy comments_update_own
   on public.comments for update
   using (author_id = auth.uid())
   with check (author_id = auth.uid());
 
+drop policy if exists comments_delete_own on public.comments;
 create policy comments_delete_own
   on public.comments for delete
   using (author_id = auth.uid());
@@ -346,6 +429,7 @@ drop policy if exists reports_insert_own_visible_target on public.reports;
 drop policy if exists reports_select_own on public.reports;
 drop policy if exists reports_delete_own on public.reports;
 
+drop policy if exists reports_insert_own_visible_target on public.reports;
 create policy reports_insert_own_visible_target
   on public.reports for insert
   with check (
@@ -357,10 +441,12 @@ create policy reports_insert_own_visible_target
     )
   );
 
+drop policy if exists reports_select_own on public.reports;
 create policy reports_select_own
   on public.reports for select
   using (reporter_id = auth.uid());
 
+drop policy if exists reports_delete_own on public.reports;
 create policy reports_delete_own
   on public.reports for delete
   using (reporter_id = auth.uid());
@@ -370,14 +456,17 @@ drop policy if exists blocks_select_own on public.blocks;
 drop policy if exists blocks_insert_own on public.blocks;
 drop policy if exists blocks_delete_own on public.blocks;
 
+drop policy if exists blocks_select_own on public.blocks;
 create policy blocks_select_own
   on public.blocks for select
   using (blocker_id = auth.uid());
 
+drop policy if exists blocks_insert_own on public.blocks;
 create policy blocks_insert_own
   on public.blocks for insert
   with check (blocker_id = auth.uid());
 
+drop policy if exists blocks_delete_own on public.blocks;
 create policy blocks_delete_own
   on public.blocks for delete
   using (blocker_id = auth.uid());
@@ -529,6 +618,7 @@ drop policy if exists saves_delete_own on public.saves;
 create policy saves_select_own on public.saves for select using (user_id=auth.uid());
 create policy saves_insert_own on public.saves for insert with check (user_id=auth.uid());
 create policy saves_delete_own on public.saves for delete using (user_id=auth.uid());
+grant select,insert,delete on public.saves to authenticated;
 
 drop policy if exists whisper_media_select_visible on public.whisper_media;
 drop policy if exists whisper_media_insert_own on public.whisper_media;
@@ -590,6 +680,42 @@ create policy mindrid_media_storage_delete on storage.objects for delete using (
   bucket_id='mindrid-media' and (storage.foldername(name))[1]=auth.uid()::text
 );
 
+-- Private messaging RLS and indexes
+alter table public.conversations enable row level security;
+alter table public.conversation_members enable row level security;
+alter table public.messages enable row level security;
+
+drop policy if exists conversations_select_member on public.conversations;
+create policy conversations_select_member on public.conversations for select using (public.mindrid_is_conversation_member(id,auth.uid()));
+
+drop policy if exists conversation_members_select_member on public.conversation_members;
+create policy conversation_members_select_member on public.conversation_members for select using (public.mindrid_is_conversation_member(conversation_id,auth.uid()));
+
+drop policy if exists messages_select_member on public.messages;
+drop policy if exists messages_insert_member on public.messages;
+drop policy if exists messages_update_own on public.messages;
+drop policy if exists messages_delete_own on public.messages;
+create policy messages_select_member on public.messages for select using (public.mindrid_is_conversation_member(conversation_id,auth.uid()));
+create policy messages_insert_member on public.messages for insert with check (sender_id=auth.uid() and public.mindrid_is_conversation_member(conversation_id,auth.uid()));
+create policy messages_update_own on public.messages for update using (sender_id=auth.uid()) with check (sender_id=auth.uid() and public.mindrid_is_conversation_member(conversation_id,auth.uid()));
+create policy messages_delete_own on public.messages for delete using (sender_id=auth.uid());
+
+grant select on public.conversations,public.conversation_members,public.messages to authenticated;
+grant insert,update,delete on public.messages to authenticated;
+
+create index if not exists conversation_members_user_idx on public.conversation_members (user_id, conversation_id);
+create index if not exists messages_conversation_idx on public.messages (conversation_id, created_at asc);
+
+create or replace function public.mindrid_touch_conversation()
+returns trigger language plpgsql security definer set search_path=public as $$
+begin
+  update public.conversations set updated_at=now(), last_message_at=new.created_at where id=new.conversation_id;
+  return new;
+end;
+$$;
+drop trigger if exists messages_touch_conversation on public.messages;
+create trigger messages_touch_conversation after insert on public.messages for each row execute procedure public.mindrid_touch_conversation();
+
 create index if not exists likes_whisper_idx on public.likes (whisper_id, created_at desc);
 create index if not exists saves_user_idx on public.saves (user_id, created_at desc);
 create index if not exists whisper_media_whisper_idx on public.whisper_media (whisper_id, created_at asc);
@@ -604,3 +730,6 @@ drop trigger if exists whispers_touch_updated_at on public.whispers;
 create trigger whispers_touch_updated_at before update on public.whispers for each row execute procedure public.mindrid_touch_updated_at();
 drop trigger if exists comments_touch_updated_at on public.comments;
 create trigger comments_touch_updated_at before update on public.comments for each row execute procedure public.mindrid_touch_updated_at();
+
+-- Ask PostgREST to reload the schema cache immediately after this script.
+notify pgrst, 'reload schema';
