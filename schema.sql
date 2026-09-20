@@ -23,6 +23,16 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now()
 );
 
+-- V7 profile fields must exist before any RLS/storage policy or function
+-- references them. This also makes upgrades from older schemas safe.
+alter table public.profiles add column if not exists bio text;
+alter table public.profiles add column if not exists location_country text;
+alter table public.profiles add column if not exists location_city text;
+alter table public.profiles add column if not exists background text;
+alter table public.profiles add column if not exists interests text[] not null default '{}';
+alter table public.profiles add column if not exists avatar_path text;
+alter table public.profiles add column if not exists is_deactivated boolean not null default false;
+
 create table if not exists public.private_identity (
   user_id uuid primary key references auth.users(id) on delete cascade,
   identification text not null check (char_length(identification) between 1 and 2000),
@@ -768,14 +778,6 @@ notify pgrst, 'reload schema';
 -- ============================================================
 -- V7 SOCIAL / DISCOVERY LAYER
 -- ============================================================
-alter table public.profiles add column if not exists bio text;
-alter table public.profiles add column if not exists location_country text;
-alter table public.profiles add column if not exists location_city text;
-alter table public.profiles add column if not exists background text;
-alter table public.profiles add column if not exists interests text[] not null default '{}';
-alter table public.profiles add column if not exists avatar_path text;
-alter table public.profiles add column if not exists is_deactivated boolean not null default false;
-
 create table if not exists public.connections (
   requester_id uuid not null references auth.users(id) on delete cascade,
   addressee_id uuid not null references auth.users(id) on delete cascade,
