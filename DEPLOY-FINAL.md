@@ -1,38 +1,39 @@
-mindRID — reliable recovery deployment
-This package is the recovery baseline. Do not combine it with files from older mindRID packages.
+mindRID V6 — deployment and verification
 1. Website
-Upload all files in this folder to the root of the GitHub Pages/site repository, replacing the old files.
-Important: `app.js` is deliberately loaded with a version query (`?v=20260919-01`) so an older cached JavaScript file is less likely to be reused.
-2. One-time browser cleanup
-If the old site previously showed `Can't find variable: shell`, an older Service Worker may still be controlling the site.
-Before testing this build, use a private/incognito window first. If the new build works there, clear the normal mindRID site data/cache and reload it.
-In Chrome: address-bar lock/site controls → Site settings → Delete data, then reopen mindrid.com.
-3. Supabase
-Run the included `schema.sql` in the Supabase SQL Editor.
-The schema explicitly permits unauthenticated visitors to read public Whispers. Private and selected Whispers remain protected.
-Do not put a Supabase secret/service-role key into the website.
-4. First test — do only these
-Open mindrid.com in an incognito/private window.
-Home loads.
-Explore loads.
-Sign in / Create account opens.
-Create an account.
+Replace the website files on the hosting service with all files in this package.
+The application version is `20260919-03`.
+2. Supabase
+Open Supabase → SQL Editor and run the entire `schema.sql` from this package.
+Do not run only selected sections. The schema is designed to be rerunnable: existing policies are dropped before recreation, `public.saves` is created if absent, private messaging is included, comment reactions are included, and the script reloads the PostgREST schema cache at the end.
+3. First browser test
+Use a private/incognito window for the first test. If an old deployment still appears, clear the site's stored data/cache once.
+4. Core verification order
 Sign in.
-Post one simple text Whisper.
-Open that Whisper.
-Add one reply.
-Do not test media, selected visibility, editing, saving, etc. until these nine steps work.
-5. No welcome email
-There is no welcome-email Edge Function, Gmail integration, or email-sending code in this package.
-
-Included in this version
-Fix for `Could not find the table 'public.saves' in the schema cache`: `schema.sql` creates `public.saves`, recreates its RLS policies safely, and ends with `NOTIFY pgrst, 'reload schema'`.
-Private one-to-one messaging: `#messages`, conversation creation by username, protected conversation membership, and protected message rows.
-Media expansion: click/press Expand on attached images/video (and Open for audio) to view the media in a larger modal.
-Deployment order
-Replace the website files with the contents of this ZIP.
-In Supabase SQL Editor, run the entire `schema.sql` from this ZIP.
-Wait briefly for the schema cache to reload.
-Open the site in a private/incognito window for the first test.
-Test: sign in → Whisper → open Whisper → reply → Save → Messages → send a private message → expand attached media.
-No welcome email or Gmail/Edge Function is included.
+Create a Whisper with text only.
+Create a Whisper with image/video/audio media.
+Open the Whisper and expand its media.
+Edit the Whisper with an attached existing media item and save.
+Like/save the Whisper.
+Open the Whisper and reply.
+Like and dislike a reply; switch between them.
+Share the Whisper from the feed and detail page.
+Share a reply and open the resulting link.
+Open Report and verify the explanation/reason choices.
+Open Messages, start a private conversation, and send a message.
+Check Saved.
+5. Expected media fix
+The previous error:
+`Could not find the 'owner_id' column of 'whisper_media' in the schema cache`
+was caused by the application sending `owner_id` while the database table uses `author_id`.
+V6 sends `author_id`.
+6. Interaction/performance changes
+Actions acknowledge immediately with progress text/toast.
+Different actions no longer block one another globally.
+Feed text/cards render before media URLs finish loading.
+Public feed initial batch is 30 items rather than 80.
+Reply media and reaction data load in parallel.
+Whisper detail renders its structure before media/replies finish loading.
+7. Report meaning
+Report is a moderation mechanism for possible rule violations such as harassment, threats, abusive/hateful content, spam/scams, privacy exposure, sexual/exploitative content, or illegal/dangerous content. It is not a dislike button and should not be used merely because someone disagrees with a thought.
+8. Not included
+No welcome email, Gmail integration, or Edge Function is included.
