@@ -656,6 +656,7 @@ drop policy if exists mindrid_media_storage_delete on storage.objects;
 create policy mindrid_media_storage_select on storage.objects for select using (
   bucket_id='mindrid-media' and (
     (storage.foldername(name))[1]=auth.uid()::text
+    or exists (select 1 from public.profiles p where p.avatar_path=name and p.is_deactivated=false)
     or exists (
       select 1 from public.whisper_media wm
       join public.whispers w on w.id=wm.whisper_id
@@ -733,3 +734,250 @@ create trigger comments_touch_updated_at before update on public.comments for ea
 
 -- Ask PostgREST to reload the schema cache immediately after this script.
 notify pgrst, 'reload schema';
+
+-- ============================================================
+-- COMMENT REACTIONS (LIKE / DISLIKE)
+-- One reaction per user per reply; changing reaction replaces the prior one.
+-- ============================================================
+create table if not exists public.comment_reactions (
+  comment_id uuid not null references public.comments(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  reaction text not null check (reaction in ('like','dislike')),
+  created_at timestamptz not null default now(),
+  primary key (comment_id,user_id)
+);
+
+alter table public.comment_reactions enable row level security;
+drop policy if exists comment_reactions_select_visible on public.comment_reactions;
+drop policy if exists comment_reactions_insert_own on public.comment_reactions;
+drop policy if exists comment_reactions_update_own on public.comment_reactions;
+drop policy if exists comment_reactions_delete_own on public.comment_reactions;
+create policy comment_reactions_select_visible on public.comment_reactions for select using (
+  exists (select 1 from public.comments c where c.id=comment_id and public.mindrid_can_comment(c.whisper_id,auth.uid()))
+);
+create policy comment_reactions_insert_own on public.comment_reactions for insert with check (
+  user_id=auth.uid() and exists (select 1 from public.comments c where c.id=comment_id and public.mindrid_can_comment(c.whisper_id,auth.uid()))
+);
+create policy comment_reactions_update_own on public.comment_reactions for update using (user_id=auth.uid()) with check (user_id=auth.uid());
+create policy comment_reactions_delete_own on public.comment_reactions for delete using (user_id=auth.uid());
+grant select,insert,update,delete on public.comment_reactions to authenticated;
+create index if not exists comment_reactions_comment_idx on public.comment_reactions (comment_id,reaction);
+
+notify pgrst, 'reload schema';
+
+-- ============================================================
+-- V7 SOCIAL / DISCOVERY LAYER
+-- ============================================================
+alter table public.profiles add column if not exists bio text;
+alter table public.profiles add column if not exists location_country text;
+alter table public.profiles add column if not exists location_city text;
+alter table public.profiles add column if not exists background text;
+alter table public.profiles add column if not exists interests text[] not null default '{}';
+alter table public.profiles add column if not exists avatar_path text;
+alter table public.profiles add column if not exists is_deactivated boolean not null default false;
+
+create table if not exists public.connections (
+  requester_id uuid not null references auth.users(id) on delete cascade,
+  addressee_id uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending','accepted','declined')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (requester_id,addressee_id),
+  check (requester_id <> addressee_id)
+);
+
+create table if not exists public.groups (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  name text not null check (char_length(name) between 2 and 100),
+  description text not null default '' check (char_length(description) <= 1000),
+  location_country text,
+  location_city text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.group_members (
+  group_id uuid not null references public.groups(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role text not null default 'member' check (role in ('owner','admin','member')),
+  created_at timestamptz not null default now(),
+  primary key (group_id,user_id)
+);
+
+create table if not exists public.whisper_tags (
+  whisper_id uuid not null references public.whispers(id) on delete cascade,
+  tag_type text not null check (tag_type in ('location','feeling','idea','vibe','topic','experience','mood','interest')),
+  tag_value text not null check (char_length(tag_value) between 1 and 100),
+  primary key (whisper_id,tag_type,tag_value)
+);
+
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_id uuid not null references auth.users(id) on delete cascade,
+  actor_id uuid references auth.users(id) on delete set null,
+  kind text not null check (char_length(kind) between 1 and 60),
+  target_type text,
+  target_id uuid,
+  message text not null check (char_length(message) between 1 and 500),
+  is_read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+alter table public.connections enable row level security;
+alter table public.groups enable row level security;
+alter table public.group_members enable row level security;
+alter table public.whisper_tags enable row level security;
+alter table public.notifications enable row level security;
+
+-- Public profile fields are already covered by profiles_select_public.
+drop policy if exists profiles_update_own on public.profiles;
+create policy profiles_update_own on public.profiles for update using (id=auth.uid()) with check (id=auth.uid());
+
+drop policy if exists connections_select_related on public.connections;
+drop policy if exists connections_insert_own on public.connections;
+drop policy if exists connections_update_related on public.connections;
+drop policy if exists connections_delete_related on public.connections;
+create policy connections_select_related on public.connections for select using (requester_id=auth.uid() or addressee_id=auth.uid());
+create policy connections_insert_own on public.connections for insert with check (requester_id=auth.uid());
+create policy connections_update_related on public.connections for update using (requester_id=auth.uid() or addressee_id=auth.uid()) with check (requester_id=auth.uid() or addressee_id=auth.uid());
+create policy connections_delete_related on public.connections for delete using (requester_id=auth.uid() or addressee_id=auth.uid());
+
+drop policy if exists groups_select_public on public.groups;
+drop policy if exists groups_insert_own on public.groups;
+drop policy if exists groups_update_own on public.groups;
+drop policy if exists groups_delete_own on public.groups;
+create policy groups_select_public on public.groups for select using (true);
+create policy groups_insert_own on public.groups for insert with check (owner_id=auth.uid());
+create policy groups_update_own on public.groups for update using (owner_id=auth.uid()) with check (owner_id=auth.uid());
+create policy groups_delete_own on public.groups for delete using (owner_id=auth.uid());
+
+drop policy if exists group_members_select_related on public.group_members;
+drop policy if exists group_members_insert_self_or_owner on public.group_members;
+drop policy if exists group_members_delete_self_or_owner on public.group_members;
+create policy group_members_select_related on public.group_members for select using (user_id=auth.uid() or exists(select 1 from public.groups g where g.id=group_id and g.owner_id=auth.uid()));
+create policy group_members_insert_self_or_owner on public.group_members for insert with check (user_id=auth.uid() or exists(select 1 from public.groups g where g.id=group_id and g.owner_id=auth.uid()));
+create policy group_members_delete_self_or_owner on public.group_members for delete using (user_id=auth.uid() or exists(select 1 from public.groups g where g.id=group_id and g.owner_id=auth.uid()));
+
+drop policy if exists whisper_tags_select_visible on public.whisper_tags;
+drop policy if exists whisper_tags_insert_owner on public.whisper_tags;
+drop policy if exists whisper_tags_delete_owner on public.whisper_tags;
+create policy whisper_tags_select_visible on public.whisper_tags for select using (exists(select 1 from public.whispers w where w.id=whisper_id and public.mindrid_can_view_whisper(w.author_id,w.visibility,w.id,auth.uid())));
+create policy whisper_tags_insert_owner on public.whisper_tags for insert with check (exists(select 1 from public.whispers w where w.id=whisper_id and w.author_id=auth.uid()));
+create policy whisper_tags_delete_owner on public.whisper_tags for delete using (exists(select 1 from public.whispers w where w.id=whisper_id and w.author_id=auth.uid()));
+
+drop policy if exists notifications_select_own on public.notifications;
+drop policy if exists notifications_update_own on public.notifications;
+create policy notifications_select_own on public.notifications for select using (recipient_id=auth.uid());
+create policy notifications_update_own on public.notifications for update using (recipient_id=auth.uid()) with check (recipient_id=auth.uid());
+
+create or replace function public.mindrid_notify(recipient uuid, actor uuid, k text, tt text, tid uuid, msg text)
+returns void language plpgsql security definer set search_path=public as $$
+begin
+  if recipient is null or actor is null or recipient=actor then return; end if;
+  insert into public.notifications(recipient_id,actor_id,kind,target_type,target_id,message)
+  values(recipient,actor,k,tt,tid,msg);
+end;
+$$;
+revoke all on function public.mindrid_notify(uuid,uuid,text,text,uuid,text) from public,anon,authenticated;
+
+drop function if exists public.mindrid_connection_request(uuid);
+create or replace function public.mindrid_connection_request(target uuid)
+returns void language plpgsql security definer set search_path=public as $$
+declare me uuid:=auth.uid(); existing public.connections;
+begin
+ if me is null then raise exception 'Authentication required.'; end if;
+ if target is null or target=me then raise exception 'Invalid connection target.'; end if;
+ select * into existing from public.connections where requester_id=me and addressee_id=target;
+ if existing.requester_id is not null then
+   if existing.status='declined' then update public.connections set status='pending',updated_at=now() where requester_id=me and addressee_id=target;
+   else return; end if;
+ else
+   select * into existing from public.connections where requester_id=target and addressee_id=me;
+   if existing.requester_id is not null and existing.status='pending' then
+      update public.connections set status='accepted',updated_at=now() where requester_id=target and addressee_id=me;
+      insert into public.notifications(recipient_id,actor_id,kind,target_type,target_id,message) values(target,me,'connection_accepted','profile',me,'Your connection request was accepted.');
+      return;
+   end if;
+   insert into public.connections(requester_id,addressee_id,status) values(me,target,'pending');
+ end if;
+ insert into public.notifications(recipient_id,actor_id,kind,target_type,target_id,message) values(target,me,'connection_request','profile',me,'You received a connection request.');
+end;
+$$;
+grant execute on function public.mindrid_connection_request(uuid) to authenticated;
+
+create or replace function public.mindrid_accept_connection(requester uuid)
+returns void language plpgsql security definer set search_path=public as $$
+declare me uuid:=auth.uid();
+begin
+ if me is null then raise exception 'Authentication required.'; end if;
+ update public.connections set status='accepted',updated_at=now() where requester_id=requester and addressee_id=me and status='pending';
+ if not found then raise exception 'Connection request not found.'; end if;
+ insert into public.notifications(recipient_id,actor_id,kind,target_type,target_id,message) values(requester,me,'connection_accepted','profile',me,'Your connection request was accepted.');
+end;
+$$;
+grant execute on function public.mindrid_accept_connection(uuid) to authenticated;
+
+create or replace function public.mindrid_disconnect(target uuid)
+returns void language sql security definer set search_path=public as $$
+ delete from public.connections where (requester_id=auth.uid() and addressee_id=target) or (requester_id=target and addressee_id=auth.uid());
+$$;
+grant execute on function public.mindrid_disconnect(uuid) to authenticated;
+
+create or replace function public.mindrid_mark_notifications_read()
+returns void language sql security definer set search_path=public as $$
+ update public.notifications set is_read=true where recipient_id=auth.uid();
+$$;
+grant execute on function public.mindrid_mark_notifications_read() to authenticated;
+
+create or replace function public.mindrid_deactivate_account()
+returns void language plpgsql security definer set search_path=public as $$
+declare me uuid:=auth.uid(); begin if me is null then raise exception 'Authentication required.'; end if; update public.profiles set is_deactivated=true where id=me; end; $$;
+grant execute on function public.mindrid_deactivate_account() to authenticated;
+
+create or replace function public.mindrid_reactivate_account()
+returns void language plpgsql security definer set search_path=public as $$
+declare me uuid:=auth.uid(); begin if me is null then raise exception 'Authentication required.'; end if; update public.profiles set is_deactivated=false where id=me; end; $$;
+grant execute on function public.mindrid_reactivate_account() to authenticated;
+
+create or replace function public.mindrid_delete_account()
+returns void language plpgsql security definer set search_path=public as $$
+declare me uuid:=auth.uid(); begin if me is null then raise exception 'Authentication required.'; end if; delete from auth.users where id=me; end; $$;
+grant execute on function public.mindrid_delete_account() to authenticated;
+
+create or replace function public.mindrid_create_group(group_name text, group_description text, country text, city text)
+returns uuid language plpgsql security definer set search_path=public as $$
+declare me uuid:=auth.uid(); gid uuid; begin if me is null then raise exception 'Authentication required.'; end if; insert into public.groups(owner_id,name,description,location_country,location_city) values(me,trim(group_name),coalesce(group_description,''),nullif(trim(country),''),nullif(trim(city),'')) returning id into gid; insert into public.group_members(group_id,user_id,role) values(gid,me,'owner'); return gid; end; $$;
+grant execute on function public.mindrid_create_group(text,text,text,text) to authenticated;
+
+create or replace function public.mindrid_join_group(gid uuid)
+returns void language plpgsql security definer set search_path=public as $$
+begin if auth.uid() is null then raise exception 'Authentication required.'; end if; if not exists(select 1 from public.groups where id=gid) then raise exception 'Group not found.'; end if; insert into public.group_members(group_id,user_id) values(gid,auth.uid()) on conflict do nothing; end; $$;
+grant execute on function public.mindrid_join_group(uuid) to authenticated;
+
+create or replace function public.mindrid_leave_group(gid uuid)
+returns void language sql security definer set search_path=public as $$ delete from public.group_members where group_id=gid and user_id=auth.uid() and role<>'owner'; $$;
+grant execute on function public.mindrid_leave_group(uuid) to authenticated;
+
+-- Notification triggers.
+create or replace function public.mindrid_comment_notification() returns trigger language plpgsql security definer set search_path=public as $$ declare owner uuid; begin select author_id into owner from public.whispers where id=new.whisper_id; perform public.mindrid_notify(owner,new.author_id,'reply','whisper',new.whisper_id,'Someone replied to your Whisper.'); return new; end; $$;
+drop trigger if exists comments_notify on public.comments; create trigger comments_notify after insert on public.comments for each row execute procedure public.mindrid_comment_notification();
+create or replace function public.mindrid_like_notification() returns trigger language plpgsql security definer set search_path=public as $$ declare owner uuid; begin select author_id into owner from public.whispers where id=new.whisper_id; perform public.mindrid_notify(owner,new.user_id,'like','whisper',new.whisper_id,'Someone liked your Whisper.'); return new; end; $$;
+drop trigger if exists likes_notify on public.likes; create trigger likes_notify after insert on public.likes for each row execute procedure public.mindrid_like_notification();
+create or replace function public.mindrid_reaction_notification() returns trigger language plpgsql security definer set search_path=public as $$ declare owner uuid; begin select author_id into owner from public.comments where id=new.comment_id; perform public.mindrid_notify(owner,new.user_id,'comment_reaction','comment',new.comment_id,'Someone reacted to your reply.'); return new; end; $$;
+drop trigger if exists comment_reactions_notify on public.comment_reactions; create trigger comment_reactions_notify after insert on public.comment_reactions for each row execute procedure public.mindrid_reaction_notification();
+create or replace function public.mindrid_message_notification() returns trigger language plpgsql security definer set search_path=public as $$ declare recipient uuid; begin for recipient in select user_id from public.conversation_members where conversation_id=new.conversation_id and user_id<>new.sender_id loop perform public.mindrid_notify(recipient,new.sender_id,'message','conversation',new.conversation_id,'You received a private message.'); end loop; return new; end; $$;
+drop trigger if exists messages_notify on public.messages; create trigger messages_notify after insert on public.messages for each row execute procedure public.mindrid_message_notification();
+
+create index if not exists profiles_location_idx on public.profiles(location_country,location_city);
+create index if not exists connections_addressee_idx on public.connections(addressee_id,status);
+create index if not exists connections_requester_idx on public.connections(requester_id,status);
+create index if not exists group_members_user_idx on public.group_members(user_id,group_id);
+create index if not exists whisper_tags_value_idx on public.whisper_tags(tag_type,tag_value);
+create index if not exists notifications_recipient_idx on public.notifications(recipient_id,is_read,created_at desc);
+
+grant select,update on public.profiles to authenticated;
+grant select,insert,update,delete on public.connections to authenticated;
+grant select,insert,update,delete on public.groups,public.group_members to authenticated;
+grant select,insert,delete on public.whisper_tags to authenticated;
+grant select,update on public.notifications to authenticated;
+notify pgrst,'reload schema';
