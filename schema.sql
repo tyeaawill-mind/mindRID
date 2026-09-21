@@ -983,3 +983,17 @@ grant select,insert,update,delete on public.groups,public.group_members to authe
 grant select,insert,delete on public.whisper_tags to authenticated;
 grant select,update on public.notifications to authenticated;
 notify pgrst,'reload schema';
+
+
+-- V8 realtime delivery: notifications should arrive without requiring a page refresh.
+do $$
+begin
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='notifications') then
+    alter publication supabase_realtime add table public.notifications;
+  end if;
+exception when undefined_object then
+  null;
+end $$;
+
+-- V8: keep notification rows protected; realtime only exposes rows permitted by RLS.
+alter table public.notifications enable row level security;
