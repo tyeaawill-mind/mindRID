@@ -14,7 +14,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="./app.js?v=20260919-04" defer></script>
+  <script src="./app.js?v=20260921-01" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -29,11 +29,12 @@
     <aside class="left-rail" aria-label="Primary navigation">
       <a class="nav-item active" data-route="home" href="#home"><span>⌂</span> Home</a>
       <a class="nav-item" data-route="explore" href="#explore"><span>⌕</span> Explore</a>
-      <a class="nav-item" data-route="notifications" href="#notifications"><span>♡</span> Notifications</a>
+      <a class="nav-item" data-route="notifications" href="#notifications"><span>♡</span> Notifications <b id="notificationBadge" class="nav-badge" hidden>•</b></a>
       <a class="nav-item" data-route="messages" href="#messages"><span>✉</span> Messages</a>
       <a class="nav-item" data-route="my" href="#my"><span>☷</span> My Whispers</a>
       <a class="nav-item" data-route="saved" href="#saved"><span>☆</span> Saved</a>
       <a class="nav-item" data-route="account" href="#account"><span>◉</span> Profile</a>
+      <a class="nav-item" data-route="network" href="#network"><span>◎</span> My Network</a>
       <a class="nav-item" data-route="people" href="#people"><span>◎</span> People</a>
       <a class="nav-item" data-route="groups" href="#groups"><span>▦</span> Groups</a>
       <a class="nav-item" data-route="live" href="#live"><span>◉</span> Live</a>
@@ -49,18 +50,13 @@
         <p>A social place for thoughts you don't want to carry.</p>
         <a href="#about">Learn more</a>
       </section>
-      <section class="side-card" id="topicCard">
-        <h3>What people are thinking</h3>
-        <div class="topic">#wondering</div>
-        <div class="topic">#maybe</div>
-        <div class="topic">#life</div>
-      </section>
+      <section class="side-card" id="topicCard"><h3>What people are thinking</h3><p class="hint">Explore live themes from recent thoughts.</p><a class="topic" href="#explore?wondering">#wondering</a><a class="topic" href="#explore?maybe">#maybe</a><a class="topic" href="#explore?life">#life</a><a class="topic topic-link" href="#explore">Explore thinking →</a></section>
       <footer class="side-footer"><a href="#privacy">Privacy</a><a href="#terms">Terms</a><a href="#contact">Contact</a><a href="#faq">FAQ</a><span>© mindRID</span></footer>
     </aside>
   </main>
 
   <nav class="mobile-nav" aria-label="Mobile navigation">
-    <a href="#home">⌂<small>Home</small></a><a href="#explore">⌕<small>Explore</small></a><a href="#people">◎<small>People</small></a><a href="#messages">✉<small>Messages</small></a><a href="#account">◉<small>Me</small></a>
+    <a href="#home">⌂<small>Home</small></a><a href="#explore">⌕<small>Explore</small></a><a href="#network">◎<small>Network</small></a><a href="#messages">✉<small>Messages</small></a><a href="#account">◉<small>Me</small></a>
   </nav>
   <button class="mobile-compose" data-action="compose" aria-label="Whisper">+</button>
 
