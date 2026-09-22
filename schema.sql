@@ -808,9 +808,19 @@ create table if not exists public.group_members (
 
 create table if not exists public.whisper_tags (
   whisper_id uuid not null references public.whispers(id) on delete cascade,
-  tag_type text not null check (tag_type in ('location','feeling','idea','vibe','topic','experience','mood','interest')),
+  tag_type text not null check (tag_type in ('location','feeling','idea','vibe','topic','experience','mood','interest','person')),
   tag_value text not null check (char_length(tag_value) between 1 and 100),
   primary key (whisper_id,tag_type,tag_value)
+);
+alter table public.whisper_tags drop constraint if exists whisper_tags_tag_type_check;
+alter table public.whisper_tags add constraint whisper_tags_tag_type_check check (tag_type in ('location','feeling','idea','vibe','topic','experience','mood','interest','person'));
+
+create table if not exists public.circle_messages (
+  id uuid primary key default gen_random_uuid(),
+  circle_id uuid not null references public.groups(id) on delete cascade,
+  sender_id uuid not null references auth.users(id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 5000),
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.notifications (
@@ -856,9 +866,14 @@ create policy groups_delete_own on public.groups for delete using (owner_id=auth
 drop policy if exists group_members_select_related on public.group_members;
 drop policy if exists group_members_insert_self_or_owner on public.group_members;
 drop policy if exists group_members_delete_self_or_owner on public.group_members;
-create policy group_members_select_related on public.group_members for select using (user_id=auth.uid() or exists(select 1 from public.groups g where g.id=group_id and g.owner_id=auth.uid()));
+create policy group_members_select_related on public.group_members for select using (auth.uid() is not null);
 create policy group_members_insert_self_or_owner on public.group_members for insert with check (user_id=auth.uid() or exists(select 1 from public.groups g where g.id=group_id and g.owner_id=auth.uid()));
 create policy group_members_delete_self_or_owner on public.group_members for delete using (user_id=auth.uid() or exists(select 1 from public.groups g where g.id=group_id and g.owner_id=auth.uid()));
+
+drop policy if exists circle_messages_select_member on public.circle_messages;
+drop policy if exists circle_messages_insert_member on public.circle_messages;
+create policy circle_messages_select_member on public.circle_messages for select using (exists(select 1 from public.group_members gm where gm.group_id=circle_id and gm.user_id=auth.uid()));
+create policy circle_messages_insert_member on public.circle_messages for insert with check (sender_id=auth.uid() and exists(select 1 from public.group_members gm where gm.group_id=circle_id and gm.user_id=auth.uid()));
 
 drop policy if exists whisper_tags_select_visible on public.whisper_tags;
 drop policy if exists whisper_tags_insert_owner on public.whisper_tags;
@@ -975,12 +990,14 @@ create index if not exists connections_addressee_idx on public.connections(addre
 create index if not exists connections_requester_idx on public.connections(requester_id,status);
 create index if not exists group_members_user_idx on public.group_members(user_id,group_id);
 create index if not exists whisper_tags_value_idx on public.whisper_tags(tag_type,tag_value);
+create index if not exists circle_messages_circle_idx on public.circle_messages(circle_id,created_at desc);
 create index if not exists notifications_recipient_idx on public.notifications(recipient_id,is_read,created_at desc);
 
 grant select,update on public.profiles to authenticated;
 grant select,insert,update,delete on public.connections to authenticated;
 grant select,insert,update,delete on public.groups,public.group_members to authenticated;
 grant select,insert,delete on public.whisper_tags to authenticated;
+grant select,insert on public.circle_messages to authenticated;
 grant select,update on public.notifications to authenticated;
 notify pgrst,'reload schema';
 
@@ -988,6 +1005,9 @@ notify pgrst,'reload schema';
 -- V8 realtime delivery: notifications should arrive without requiring a page refresh.
 do $$
 begin
+  if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='circle_messages') then
+    alter publication supabase_realtime add table public.circle_messages;
+  end if;
   if not exists (select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename='notifications') then
     alter publication supabase_realtime add table public.notifications;
   end if;
