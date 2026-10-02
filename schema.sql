@@ -32,7 +32,12 @@ alter table public.profiles add column if not exists location_city text;
 alter table public.profiles add column if not exists background text;
 alter table public.profiles add column if not exists interests text[] not null default '{}';
 alter table public.profiles add column if not exists avatar_path text;
+alter table public.profiles add column if not exists background_path text;
+alter table public.profiles add column if not exists theme_key text not null default 'auto' check (theme_key in ('auto','sky','lavender','mint','sunset','mono'));
+alter table public.profiles add column if not exists last_whisper_vibe text;
 alter table public.profiles add column if not exists is_deactivated boolean not null default false;
+alter table public.profiles drop constraint if exists profiles_theme_key_check;
+alter table public.profiles add constraint profiles_theme_key_check check (theme_key in ('auto','sky','lavender','mint','sunset','mono'));
 
 create table if not exists public.private_identity (
   user_id uuid primary key references auth.users(id) on delete cascade,
@@ -302,7 +307,7 @@ drop policy if exists profiles_update_own on public.profiles;
 drop policy if exists profiles_select_public on public.profiles;
 create policy profiles_select_public
   on public.profiles for select
-  using (true);
+  using (is_deactivated=false or id=auth.uid());
 drop policy if exists profiles_insert_own on public.profiles;
 create policy profiles_insert_own
   on public.profiles for insert
@@ -668,10 +673,11 @@ drop policy if exists mindrid_media_storage_insert on storage.objects;
 drop policy if exists mindrid_media_storage_update on storage.objects;
 drop policy if exists mindrid_media_storage_delete on storage.objects;
 
+drop policy if exists mindrid_media_storage_select on storage.objects;
 create policy mindrid_media_storage_select on storage.objects for select using (
   bucket_id='mindrid-media' and (
     (storage.foldername(name))[1]=auth.uid()::text
-    or exists (select 1 from public.profiles p where p.avatar_path=name and p.is_deactivated=false)
+    or exists (select 1 from public.profiles p where (p.avatar_path=name or p.background_path=name) and p.is_deactivated=false)
     or exists (
       select 1 from public.whisper_media wm
       join public.whispers w on w.id=wm.whisper_id
@@ -684,14 +690,17 @@ create policy mindrid_media_storage_select on storage.objects for select using (
     )
   )
 );
+drop policy if exists mindrid_media_storage_insert on storage.objects;
 create policy mindrid_media_storage_insert on storage.objects for insert with check (
   bucket_id='mindrid-media' and (storage.foldername(name))[1]=auth.uid()::text
 );
+drop policy if exists mindrid_media_storage_update on storage.objects;
 create policy mindrid_media_storage_update on storage.objects for update using (
   bucket_id='mindrid-media' and (storage.foldername(name))[1]=auth.uid()::text
 ) with check (
   bucket_id='mindrid-media' and (storage.foldername(name))[1]=auth.uid()::text
 );
+drop policy if exists mindrid_media_storage_delete on storage.objects;
 create policy mindrid_media_storage_delete on storage.objects for delete using (
   bucket_id='mindrid-media' and (storage.foldername(name))[1]=auth.uid()::text
 );
@@ -793,6 +802,21 @@ create table if not exists public.connections (
   check (requester_id <> addressee_id)
 );
 
+create table if not exists public.follows (
+  follower_id uuid not null references auth.users(id) on delete cascade,
+  following_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (follower_id,following_id),
+  check (follower_id <> following_id)
+);
+
+create table if not exists public.whisper_history (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  whisper_id uuid not null references public.whispers(id) on delete cascade,
+  viewed_at timestamptz not null default now(),
+  primary key (user_id,whisper_id)
+);
+
 create table if not exists public.groups (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
@@ -858,6 +882,28 @@ create policy connections_select_related on public.connections for select using 
 create policy connections_insert_own on public.connections for insert with check (requester_id=auth.uid());
 create policy connections_update_related on public.connections for update using (requester_id=auth.uid() or addressee_id=auth.uid()) with check (requester_id=auth.uid() or addressee_id=auth.uid());
 create policy connections_delete_related on public.connections for delete using (requester_id=auth.uid() or addressee_id=auth.uid());
+
+alter table public.follows enable row level security;
+alter table public.whisper_history enable row level security;
+
+drop policy if exists follows_select_related on public.follows;
+drop policy if exists follows_insert_own on public.follows;
+drop policy if exists follows_delete_own on public.follows;
+create policy follows_select_related on public.follows for select
+  using (follower_id=auth.uid() or following_id=auth.uid());
+create policy follows_insert_own on public.follows for insert
+  with check (follower_id=auth.uid() and follower_id<>following_id and not public.mindrid_is_blocked(auth.uid(),following_id) and exists(select 1 from public.profiles p where p.id=following_id and p.is_deactivated=false));
+create policy follows_delete_own on public.follows for delete
+  using (follower_id=auth.uid());
+
+drop policy if exists whisper_history_select_own on public.whisper_history;
+drop policy if exists whisper_history_insert_own on public.whisper_history;
+drop policy if exists whisper_history_update_own on public.whisper_history;
+drop policy if exists whisper_history_delete_own on public.whisper_history;
+create policy whisper_history_select_own on public.whisper_history for select using (user_id=auth.uid());
+create policy whisper_history_insert_own on public.whisper_history for insert with check (user_id=auth.uid());
+create policy whisper_history_update_own on public.whisper_history for update using (user_id=auth.uid()) with check (user_id=auth.uid());
+create policy whisper_history_delete_own on public.whisper_history for delete using (user_id=auth.uid());
 
 drop policy if exists groups_select_public on public.groups;
 drop policy if exists groups_insert_own on public.groups;
@@ -967,6 +1013,20 @@ returns void language plpgsql security definer set search_path=public as $$
 declare me uuid:=auth.uid(); begin if me is null then raise exception 'Authentication required.'; end if; delete from storage.objects where bucket_id='mindrid-media' and (storage.foldername(name))[1]=me::text; delete from auth.users where id=me; end; $$;
 grant execute on function public.mindrid_delete_account() to authenticated;
 
+create or replace function public.mindrid_follow_counts(target uuid)
+returns table(followers bigint, following bigint)
+language sql
+stable
+security definer
+set search_path=public
+as $$
+  select
+    (select count(*) from public.follows where following_id=target),
+    (select count(*) from public.follows where follower_id=target);
+$$;
+revoke all on function public.mindrid_follow_counts(uuid) from public;
+grant execute on function public.mindrid_follow_counts(uuid) to anon, authenticated;
+
 create or replace function public.mindrid_create_group(group_name text, group_description text, country text, city text)
 returns uuid language plpgsql security definer set search_path=public as $$
 declare me uuid:=auth.uid(); gid uuid; begin if me is null then raise exception 'Authentication required.'; end if; insert into public.groups(owner_id,name,description,location_country,location_city) values(me,trim(group_name),coalesce(group_description,''),nullif(trim(country),''),nullif(trim(city),'')) returning id into gid; insert into public.group_members(group_id,user_id,role) values(gid,me,'owner'); return gid; end; $$;
@@ -981,6 +1041,17 @@ create or replace function public.mindrid_leave_group(gid uuid)
 returns void language sql security definer set search_path=public as $$ delete from public.group_members where group_id=gid and user_id=auth.uid() and role<>'owner'; $$;
 grant execute on function public.mindrid_leave_group(uuid) to authenticated;
 
+create or replace function public.mindrid_follow_notification() returns trigger language plpgsql security definer set search_path=public as $$
+begin
+  if new.follower_id<>new.following_id then
+    perform public.mindrid_notify(new.following_id,new.follower_id,'follow','profile',new.follower_id,'Someone followed you.');
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists follows_notify on public.follows;
+create trigger follows_notify after insert on public.follows for each row execute procedure public.mindrid_follow_notification();
+
 -- Notification triggers.
 create or replace function public.mindrid_comment_notification() returns trigger language plpgsql security definer set search_path=public as $$ declare owner uuid; begin select author_id into owner from public.whispers where id=new.whisper_id; perform public.mindrid_notify(owner,new.author_id,'reply','whisper',new.whisper_id,'Someone replied to your Whisper.'); return new; end; $$;
 drop trigger if exists comments_notify on public.comments; create trigger comments_notify after insert on public.comments for each row execute procedure public.mindrid_comment_notification();
@@ -990,6 +1061,11 @@ create or replace function public.mindrid_reaction_notification() returns trigge
 drop trigger if exists comment_reactions_notify on public.comment_reactions; create trigger comment_reactions_notify after insert on public.comment_reactions for each row execute procedure public.mindrid_reaction_notification();
 create or replace function public.mindrid_message_notification() returns trigger language plpgsql security definer set search_path=public as $$ declare recipient uuid; begin for recipient in select user_id from public.conversation_members where conversation_id=new.conversation_id and user_id<>new.sender_id loop perform public.mindrid_notify(recipient,new.sender_id,'message','conversation',new.conversation_id,'You received a private message.'); end loop; return new; end; $$;
 drop trigger if exists messages_notify on public.messages; create trigger messages_notify after insert on public.messages for each row execute procedure public.mindrid_message_notification();
+
+create index if not exists follows_following_idx on public.follows(following_id,created_at desc);
+create index if not exists follows_follower_idx on public.follows(follower_id,created_at desc);
+create index if not exists whisper_history_user_idx on public.whisper_history(user_id,viewed_at desc);
+create index if not exists whisper_history_whisper_idx on public.whisper_history(whisper_id,viewed_at desc);
 
 create index if not exists profiles_location_idx on public.profiles(location_country,location_city);
 create index if not exists connections_addressee_idx on public.connections(addressee_id,status);
