@@ -7,3 +7,9 @@ Run the complete `schema.sql` before first use.
 
 V9
 V9 adds edit-media controls, topic-based thought discovery without visible # signs, network-person mention suggestions, and the Circle experience (popular Circles, membership confirmation, member wall, Circle messaging, and Live adda entry).
+
+V10 — Responsive UX
+Mobile-first focused Whisper composer.
+Separate guest and signed-in Home states.
+Guest Home: “Get rid.” hero with bird sketch and public thought discovery.
+Facebook-like responsive navigation/composer interaction conventions without copying proprietary assets.
