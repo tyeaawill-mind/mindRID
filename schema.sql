@@ -10,6 +10,7 @@
 -- 4) New app code should NOT put private identification in auth metadata.
 
 create extension if not exists pgcrypto;
+create extension if not exists pg_trgm;
 
 -- ============================================================
 -- TABLES
@@ -137,6 +138,7 @@ begin
   if me is null then raise exception 'Authentication required.'; end if;
   if recipient is null or recipient=me then raise exception 'Invalid recipient.'; end if;
   if not exists (select 1 from auth.users where id=recipient) then raise exception 'Recipient not found.'; end if;
+  if exists (select 1 from public.blocks where (blocker_id=me and blocked_id=recipient) or (blocker_id=recipient and blocked_id=me)) then raise exception 'This conversation is unavailable.'; end if;
   select c.id into existing
   from public.conversations c
   where (select count(*) from public.conversation_members cm where cm.conversation_id=c.id)=2
@@ -191,11 +193,14 @@ set search_path = public
 as $$
   select
     case
-      when viewer is null then whisper_visibility = 'public'
+      when viewer is null then
+        whisper_visibility = 'public'
+        and exists (select 1 from public.profiles p where p.id=whisper_author and p.is_deactivated=false)
       else
         whisper_author = viewer
         or (
           not public.mindrid_is_blocked(viewer, whisper_author)
+          and exists (select 1 from public.profiles p where p.id=whisper_author and p.is_deactivated=false)
           and (
             whisper_visibility = 'public'
             or (
@@ -904,6 +909,7 @@ declare me uuid:=auth.uid(); existing public.connections;
 begin
  if me is null then raise exception 'Authentication required.'; end if;
  if target is null or target=me then raise exception 'Invalid connection target.'; end if;
+ if exists (select 1 from public.blocks where (blocker_id=me and blocked_id=target) or (blocker_id=target and blocked_id=me)) then raise exception 'This connection is unavailable.'; end if;
  select * into existing from public.connections where requester_id=me and addressee_id=target;
  if existing.requester_id is not null then
    if existing.status='declined' then update public.connections set status='pending',updated_at=now() where requester_id=me and addressee_id=target;
@@ -958,7 +964,7 @@ grant execute on function public.mindrid_reactivate_account() to authenticated;
 
 create or replace function public.mindrid_delete_account()
 returns void language plpgsql security definer set search_path=public as $$
-declare me uuid:=auth.uid(); begin if me is null then raise exception 'Authentication required.'; end if; delete from auth.users where id=me; end; $$;
+declare me uuid:=auth.uid(); begin if me is null then raise exception 'Authentication required.'; end if; delete from storage.objects where bucket_id='mindrid-media' and (storage.foldername(name))[1]=me::text; delete from auth.users where id=me; end; $$;
 grant execute on function public.mindrid_delete_account() to authenticated;
 
 create or replace function public.mindrid_create_group(group_name text, group_description text, country text, city text)
@@ -992,6 +998,13 @@ create index if not exists group_members_user_idx on public.group_members(user_i
 create index if not exists whisper_tags_value_idx on public.whisper_tags(tag_type,tag_value);
 create index if not exists circle_messages_circle_idx on public.circle_messages(circle_id,created_at desc);
 create index if not exists notifications_recipient_idx on public.notifications(recipient_id,is_read,created_at desc);
+create index if not exists profiles_username_trgm_idx on public.profiles using gin (username gin_trgm_ops);
+create index if not exists profiles_display_name_trgm_idx on public.profiles using gin (display_name gin_trgm_ops);
+create index if not exists profiles_city_trgm_idx on public.profiles using gin (location_city gin_trgm_ops);
+create index if not exists groups_name_trgm_idx on public.groups using gin (name gin_trgm_ops);
+create index if not exists groups_description_trgm_idx on public.groups using gin (description gin_trgm_ops);
+create index if not exists whispers_body_trgm_idx on public.whispers using gin (body gin_trgm_ops);
+create index if not exists whisper_tags_value_trgm_idx on public.whisper_tags using gin (tag_value gin_trgm_ops);
 
 grant select,update on public.profiles to authenticated;
 grant select,insert,update,delete on public.connections to authenticated;
