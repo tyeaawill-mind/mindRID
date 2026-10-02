@@ -1,14 +1,11 @@
-mindRID V12 — Finished Web Package
-This is the reviewed V12 web release of mindRID.
-It contains the complete deployable frontend, the full Supabase schema, deployment notes and the deep-audit record.
-Release focus
-mobile and desktop interaction smoothness
-reliable mobile Whisper composition
-inclusive global search
-public People profiles
-Circle member management
-media lifecycle reliability
-account/data lifecycle hardening
-responsive accessibility and touch improvements
-consistent mindRID typemark and trust surfaces
-Read `DEPLOY-V12.md` before deployment and `AUDIT-V12.md` for the QA record.
+mindRID V13 — Finished Product Pass
+A deployable web release built from the V12 package and subjected to a source-level reliability, security, performance and UX review.
+Included
+Thought-first Home with For You / Following / Timeline feed choices.
+Following / Followers system.
+Timeline, Spaces, Community, History and Whisper Memory.
+Scrollable desktop navigation and iPhone-aware mobile/PWA shell.
+Profile photo + background photo + selectable/automatic theme.
+Approved guest “Get rid” hero wording and flying-bird/triple-flight-line treatment.
+Search hardening, route refresh corrections and feed/media performance improvements.
+Read `DEPLOY-V13.md` before deployment and the updated audit record for the QA scope.
