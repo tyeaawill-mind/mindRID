@@ -14,7 +14,7 @@
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="./app.js?v=20261002-01" defer></script>
+  <script src="./app.js?v=20261002-03" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -50,8 +50,8 @@
         <p>Get rid of thoughts you don't want to carry.</p>
         <a href="#about">Learn more</a>
       </section>
-      <section class="side-card" id="topicCard"><h3>What people are thinking</h3><p class="hint">Explore live themes from recent thoughts.</p><a class="topic" href="#explore?wondering">Wondering</a><a class="topic" href="#explore?maybe">Maybe</a><a class="topic" href="#explore?life">Life</a><a class="topic topic-link" href="#explore">Explore thinking →</a></section>
-      <footer class="side-footer"><a href="#privacy">Privacy</a><a href="#terms">Terms</a><a href="#contact">Contact</a><a href="#faq">FAQ</a><span>© mindRID</span></footer>
+      <section class="side-card privacy-promise-card"><div class="privacy-mark">♡</div><strong>mindRID doesn't sell your emotion or data.</strong><a href="#privacy">Our privacy promise →</a></section><section class="side-card" id="topicCard"><h3>What people are thinking</h3><p class="hint">Explore live themes from recent thoughts.</p><a class="topic" href="#explore?wondering">Wondering</a><a class="topic" href="#explore?maybe">Maybe</a><a class="topic" href="#explore?life">Life</a><a class="topic topic-link" href="#explore">Explore thinking →</a></section>
+      <footer class="side-footer"><a href="#about">About</a><a href="#privacy">Privacy</a><a href="#terms">Terms</a><a href="#contact">Contact</a><a href="#faq">FAQ</a><a href="#guidelines">Guidelines</a><a href="#safety">Safety</a><a href="#accessibility">Accessibility</a><a href="#cookies">Cookies</a><span>© mindRID</span></footer>
     </aside>
   </main>
 
@@ -61,6 +61,6 @@
   <button class="mobile-compose" data-action="compose" aria-label="Whisper">+</button>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <div id="modal" class="modal hidden" aria-hidden="true"></div>
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true"></div>
 </body>
 </html>
