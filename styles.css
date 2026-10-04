@@ -90,7 +90,7 @@ body.guest-mode .mobile-compose{display:none!important}
 .bird-eye{fill:#27345e}
 .guest-message{position:relative;max-width:690px;margin:30px 0 30px;padding:23px 26px 23px 45px;border-left:3px solid #b8d8f2;background:linear-gradient(90deg,#f1f8ff 0%,rgba(241,248,255,.35) 100%);border-radius:0 16px 16px 0}
 .guest-message p{margin:0;color:#526078;font-size:20px;line-height:1.62;letter-spacing:-.1px}
-.guest-quote{position:absolute;left:17px;top:8px;font-size:42px;line-height:1;color:#8dbfe8;font-family:Georgia,serif}
+
 .guest-actions{display:flex;gap:10px;align-items:center}
 .guest-actions .btn{min-width:108px}
 
@@ -103,7 +103,7 @@ body.guest-mode .mobile-compose{display:none!important}
   .bird-sketch{width:112px}
   .guest-message{margin:28px 0 26px;padding:20px 18px 20px 35px;border-radius:0 14px 14px 0}
   .guest-message p{font-size:17px;line-height:1.58}
-  .guest-quote{left:11px;top:7px;font-size:34px}
+  
   .guest-actions{width:100%}
   .guest-actions .btn{flex:1}
 }
@@ -189,3 +189,22 @@ body[data-theme="sky"]{--accent:#4f6fd7;--accent2:#3855bd}body[data-theme="laven
   .guest-brandline{min-height:96px;gap:4px}.guest-copy h1{font-size:56px}.bird-sketch{width:116px}
   .guest-message{margin-top:24px;padding:18px 14px 18px 34px}.guest-message p{font-size:17px;line-height:1.55}
 }
+
+/* V14 — reflection language, faster auth paint, larger writing surface, swift bird */
+.avatar-contact{display:grid;place-items:center;width:100%;height:100%;color:var(--accent)}
+.avatar-contact svg{width:54%;height:54%;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.composer textarea{min-height:148px;font-size:18px;line-height:1.52}
+.bird-tail{fill:#3557ad;stroke:#29438d;stroke-width:1}
+.bird-wing-secondary{opacity:.72}
+.bird-body{fill:#315bbf;stroke:#263f89;stroke-width:1.1}
+.bird-wing{fill:#4f70d0;stroke:#2f4c9f;stroke-width:1}
+.bird-eye{fill:#1d315e}
+.guest-message{border-left-width:2px}
+@media(max-width:680px){
+  .composer textarea{min-height:148px}
+  .mobile-composer-card .composer textarea{min-height:76dvh;font-size:21px;line-height:1.55}
+}
+
+/* V15 — account recovery, visible mobile messaging, AI-assisted platform identity */
+.ai-tagline{display:inline-flex;align-items:center;justify-content:center;margin:4px 0 2px;padding:7px 13px;border:1px solid rgba(90,88,214,.28);border-radius:999px;background:rgba(255,255,255,.62);color:#4d4aa8;font-size:13px;font-weight:800;letter-spacing:.15px;box-shadow:0 5px 18px rgba(60,70,150,.08);backdrop-filter:blur(5px)}
+@media(max-width:680px){.ai-tagline{font-size:12px;padding:6px 11px}.mobile-nav a{min-width:62px}.mobile-nav{overflow-x:auto;justify-content:flex-start}.mobile-nav a small{font-size:10px}}
