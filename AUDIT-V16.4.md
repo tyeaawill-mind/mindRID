@@ -1,7 +1,7 @@
-# mindRID V16.4 Audit — World-class Landing Composition
+# mindRID V16.5 Audit — World-class Landing Composition
 
 ## Scope
-V16.4 is a compositional refinement of the V16.3 baseline. The existing product logic, authentication, recovery hardening, mobile Messages navigation, and database contract are preserved.
+V16.5 is a compositional refinement of the V16.3 baseline. The existing product logic, authentication, recovery hardening, mobile Messages navigation, and database contract are preserved.
 
 ## Landing redesign
 - Rebalanced desktop hero to use the available viewport without creating excessive dead space.
