@@ -174,37 +174,18 @@ button,.btn,.action,.nav-item,.mobile-nav a,.mobile-compose,.attach-btn{min-heig
 .space-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:18px}.space-card{min-height:150px;padding:20px;border:1px solid var(--line);border-radius:16px;text-decoration:none;color:var(--text);background:linear-gradient(145deg,#fff,#f7f9ff);display:flex;flex-direction:column;gap:8px;transition:transform .15s ease,box-shadow .15s ease}.space-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(50,60,100,.08)}.space-card strong{font-size:18px;color:var(--accent)}.space-card span{color:var(--muted);line-height:1.5}.space-card small{margin-top:auto;color:var(--accent);font-weight:700}
 .support-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:18px}.support-grid .side-card{margin:0;text-decoration:none;color:inherit;min-height:130px}
 body[data-theme="sky"]{--accent:#4f6fd7;--accent2:#3855bd}body[data-theme="lavender"]{--accent:#7657c8;--accent2:#5c40ae}body[data-theme="mint"]{--accent:#268a78;--accent2:#1c6b5e}body[data-theme="sunset"]{--accent:#d66b4c;--accent2:#b94f35}body[data-theme="mono"]{--accent:#4b5563;--accent2:#374151}
+/* V16 — supplied bird artwork, flight trails and refined landing palette */
 .guest-home{position:relative;overflow:hidden;border-radius:0;background:
- radial-gradient(circle at 8% 18%,rgba(255,255,255,.95) 0 7%,transparent 19%),
- radial-gradient(circle at 92% 85%,rgba(255,255,255,.8) 0 8%,transparent 22%),
- linear-gradient(180deg,#dff2ff 0%,#bfe3fb 55%,#eaf7ff 100%);box-shadow:inset 0 0 70px rgba(255,255,255,.42)}
-.guest-home:before,.guest-home:after{content:"";position:absolute;border-radius:50%;filter:blur(12px);background:rgba(255,255,255,.8);pointer-events:none}.guest-home:before{width:300px;height:90px;left:-50px;top:25px}.guest-home:after{width:360px;height:110px;right:-70px;bottom:0}
-.guest-home>*{position:relative;z-index:1}.guest-brandline{gap:8px}.guest-copy h1{font-family:"Snell Roundhand","Segoe Script","Brush Script MT",cursive;font-weight:500;letter-spacing:-3px;text-shadow:0 2px 0 rgba(255,255,255,.35)}.guest-copy h1 span{color:#18365d}.guest-copy h1 em{color:#5a58d6;font-style:normal}.bird-sketch{width:190px;filter:drop-shadow(0 3px 4px rgba(40,80,130,.12))}.bird-flight{fill:none;stroke:#77aee8;stroke-width:2;stroke-linecap:round;opacity:.95}.bird-body{fill:#4167c8;stroke:#2e4b9d;stroke-width:1.2}.bird-wing{fill:#617de0;stroke:#3856ae;stroke-width:1}.bird-eye{fill:#1d315e}.guest-message{background:rgba(255,255,255,.42);border-left-color:rgba(95,146,215,.55);backdrop-filter:blur(3px)}.guest-message p{color:#304d73;font-family:Georgia,"Times New Roman",serif}
-@media(max-width:980px){.left-rail{height:calc(100vh - 76px)}}
-@media(max-width:680px){
-  .feed-tabs{top:52px}.feed-tabs a{font-size:13px;padding:10px 4px}
-  .space-grid,.support-grid{grid-template-columns:1fr;padding:14px}.space-card{min-height:125px}
-  .profile-cover{height:150px}.profile-header{padding:0 14px 18px}.profile-avatar-wrap{margin-left:12px}.profile-stats{gap:14px}
-  .guest-home{border-radius:0;min-height:calc(100dvh - 52px);justify-content:center;padding:34px 18px 46px}
-  .guest-brandline{min-height:96px;gap:4px}.guest-copy h1{font-size:56px}.bird-sketch{width:116px}
-  .guest-message{margin-top:24px;padding:18px 14px 18px 34px}.guest-message p{font-size:17px;line-height:1.55}
-}
-
-/* V14 — reflection language, faster auth paint, larger writing surface, swift bird */
-.avatar-contact{display:grid;place-items:center;width:100%;height:100%;color:var(--accent)}
-.avatar-contact svg{width:54%;height:54%;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.composer textarea{min-height:148px;font-size:18px;line-height:1.52}
-.bird-tail{fill:#3557ad;stroke:#29438d;stroke-width:1}
-.bird-wing-secondary{opacity:.72}
-.bird-body{fill:#315bbf;stroke:#263f89;stroke-width:1.1}
-.bird-wing{fill:#4f70d0;stroke:#2f4c9f;stroke-width:1}
-.bird-eye{fill:#1d315e}
-.guest-message{border-left-width:2px}
-@media(max-width:680px){
-  .composer textarea{min-height:148px}
-  .mobile-composer-card .composer textarea{min-height:76dvh;font-size:21px;line-height:1.55}
-}
+ radial-gradient(circle at 86% 8%,rgba(255,220,135,.30) 0 5%,transparent 18%),
+ radial-gradient(circle at 12% 20%,rgba(255,255,255,.72) 0 7%,transparent 20%),
+ linear-gradient(180deg,#d7e9fb 0%,#c8dbf4 50%,#eceafb 100%);box-shadow:inset 0 0 90px rgba(255,255,255,.36)}
+.guest-home:before,.guest-home:after{content:"";position:absolute;border-radius:50%;filter:blur(18px);pointer-events:none}.guest-home:before{width:340px;height:120px;left:-70px;top:18px;background:rgba(255,255,255,.42)}.guest-home:after{width:420px;height:150px;right:-100px;bottom:-25px;background:rgba(229,223,255,.42)}
+.guest-home>*{position:relative;z-index:1}.guest-brandline{gap:10px;align-items:center}.guest-copy h1{font-family:"Snell Roundhand","Segoe Script","Brush Script MT",cursive;font-weight:500;letter-spacing:-3px;text-shadow:0 2px 0 rgba(255,255,255,.38)}.guest-copy h1 span{color:#19385f}.guest-copy h1 em{color:#6556c9;font-style:normal}
+.bird-art{position:relative;width:210px;height:118px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}.bird-flight-lines{position:absolute;inset:-8px -18px auto -48px;width:285px;height:128px;overflow:visible;z-index:0}.bird-flight-lines path{fill:none;stroke:#7c82d2;stroke-width:2.15;stroke-linecap:round;opacity:.54}.bird-flight-lines path:nth-child(2){opacity:.40}.bird-flight-lines path:nth-child(3){opacity:.28}.landing-bird{position:relative;z-index:1;width:210px;height:auto;display:block;filter:drop-shadow(0 7px 10px rgba(57,42,112,.13)) saturate(.92) contrast(.98)}
+.guest-message{background:rgba(255,255,255,.34);border:0;border-left:0;border-radius:18px;padding:23px 26px;backdrop-filter:blur(5px);box-shadow:0 10px 30px rgba(69,67,130,.06),inset 0 1px 0 rgba(255,255,255,.44)}.guest-message p{color:#30486d;font-family:Georgia,"Times New Roman",serif}
+.guest-trust{margin-top:22px;color:#4d6080;font-size:13px;display:flex;align-items:center;gap:7px}.guest-trust::before{content:'✓';width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.62);color:#6556c9;font-weight:800;box-shadow:0 3px 10px rgba(80,70,150,.08)}
+@media(max-width:680px){.guest-home{padding-top:34px}.guest-brandline{min-height:104px;gap:4px}.guest-copy h1{font-size:56px}.bird-art{width:138px;height:94px}.landing-bird{width:138px}.bird-flight-lines{left:-32px;top:-2px;width:195px;height:102px}.guest-message{margin-top:24px;padding:18px 14px}.guest-message p{font-size:17px;line-height:1.55}.guest-trust{margin-top:18px}}
 
 /* V15 — account recovery, visible mobile messaging, AI-assisted platform identity */
-.ai-tagline{display:inline-flex;align-items:center;justify-content:center;margin:4px 0 2px;padding:7px 13px;border:1px solid rgba(90,88,214,.28);border-radius:999px;background:rgba(255,255,255,.62);color:#4d4aa8;font-size:13px;font-weight:800;letter-spacing:.15px;box-shadow:0 5px 18px rgba(60,70,150,.08);backdrop-filter:blur(5px)}
+.ai-tagline{display:inline-flex;align-items:center;justify-content:center;margin:10px 0 2px;padding:7px 13px;border:1px solid rgba(90,88,214,.28);border-radius:999px;background:rgba(245,243,255,.72);color:#5146a5;font-size:13px;font-weight:800;letter-spacing:.15px;box-shadow:0 5px 18px rgba(60,70,150,.08);backdrop-filter:blur(5px)}
 @media(max-width:680px){.ai-tagline{font-size:12px;padding:6px 11px}.mobile-nav a{min-width:62px}.mobile-nav{overflow-x:auto;justify-content:flex-start}.mobile-nav a small{font-size:10px}}
