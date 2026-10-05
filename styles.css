@@ -189,3 +189,263 @@ body[data-theme="sky"]{--accent:#4f6fd7;--accent2:#3855bd}body[data-theme="laven
 /* V15 — account recovery, visible mobile messaging, AI-assisted platform identity */
 .ai-tagline{display:inline-flex;align-items:center;justify-content:center;margin:10px 0 2px;padding:7px 13px;border:1px solid rgba(90,88,214,.28);border-radius:999px;background:rgba(245,243,255,.72);color:#5146a5;font-size:13px;font-weight:800;letter-spacing:.15px;box-shadow:0 5px 18px rgba(60,70,150,.08);backdrop-filter:blur(5px)}
 @media(max-width:680px){.ai-tagline{font-size:12px;padding:6px 11px}.mobile-nav a{min-width:62px}.mobile-nav{overflow-x:auto;justify-content:flex-start}.mobile-nav a small{font-size:10px}}
+
+/* V16.2 — landing bird polish, desktop composition, animated trails, recovery-friendly landing */
+body.guest-mode .timeline{background:transparent}
+body.guest-mode .guest-home{
+  width:100%;
+  max-width:1040px;
+  min-height:calc(100dvh - 56px);
+  box-sizing:border-box;
+  margin:0 auto;
+  padding:64px 56px 78px;
+  display:flex;
+  align-items:center;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 76% 8%,rgba(255,235,164,.25) 0 7%,rgba(255,235,164,0) 25%),
+    radial-gradient(circle at 16% 72%,rgba(188,210,255,.34) 0 14%,rgba(188,210,255,0) 38%),
+    linear-gradient(145deg,#f5f9ff 0%,#e7f1ff 42%,#e9e5fb 100%);
+}
+body.guest-mode .guest-home:before{width:420px;height:150px;left:-110px;top:6px;background:rgba(255,255,255,.52)}
+body.guest-mode .guest-home:after{width:500px;height:180px;right:-120px;bottom:-50px;background:rgba(219,214,255,.30)}
+body.guest-mode .guest-copy{max-width:860px;margin:0 auto;width:100%}
+body.guest-mode .guest-brandline{min-height:116px;gap:8px;align-items:center;position:relative}
+body.guest-mode .guest-copy h1{font-size:82px;line-height:.9;letter-spacing:-4px}
+body.guest-mode .bird-art{position:relative;width:124px;height:92px;display:flex;align-items:center;justify-content:center;flex:0 0 124px;margin-left:2px;transform:translateY(1px)}
+body.guest-mode .bird-flight-lines{position:absolute;left:-38px;top:-20px;width:205px;height:112px;overflow:visible;z-index:0}
+body.guest-mode .bird-flight-lines path{stroke:#7478c9;stroke-width:1.9;stroke-linecap:round;stroke-dasharray:17 12;animation:trail-flow 2.8s linear infinite;opacity:.40}
+body.guest-mode .bird-flight-lines path:nth-child(2){animation-delay:-.7s;opacity:.29}
+body.guest-mode .bird-flight-lines path:nth-child(3){animation-delay:-1.35s;opacity:.20}
+body.guest-mode .landing-bird{position:relative;z-index:1;width:112px;height:auto;display:block;background:transparent;filter:drop-shadow(0 6px 8px rgba(61,52,125,.12)) saturate(.90) contrast(1.01);animation:bird-cruise 2.2s ease-in-out infinite}
+body.guest-mode .guest-message{max-width:690px;margin:30px 0 25px;padding:22px 27px;background:rgba(255,255,255,.38);border:0;border-left:0;border-radius:18px;backdrop-filter:blur(7px);box-shadow:0 12px 34px rgba(69,67,130,.055),inset 0 1px 0 rgba(255,255,255,.48)}
+body.guest-mode .guest-message p{color:#314b70;font-size:20px;line-height:1.6}
+body.guest-mode .guest-actions{margin-top:0}
+body.guest-mode .guest-trust{margin-top:18px;color:#65718a}
+body.guest-mode .ai-tagline{margin-top:10px}
+@keyframes bird-cruise{
+  0%,100%{transform:translate3d(-2px,2px,0) rotate(-1deg)}
+  25%{transform:translate3d(4px,-5px,0) rotate(1deg)}
+  50%{transform:translate3d(8px,1px,0) rotate(2deg)}
+  75%{transform:translate3d(3px,-4px,0) rotate(0deg)}
+}
+@keyframes trail-flow{to{stroke-dashoffset:-62}}
+@media(max-width:980px) and (min-width:681px){
+  body.guest-mode .guest-home{max-width:900px;padding:58px 42px 70px}
+  body.guest-mode .guest-copy h1{font-size:74px}
+  body.guest-mode .bird-art{width:116px;flex-basis:116px}
+  body.guest-mode .landing-bird{width:104px}
+}
+@media(max-width:680px){
+  body.guest-mode .guest-home{max-width:none;min-height:calc(100dvh - 52px);padding:34px 20px 48px;align-items:flex-start}
+  body.guest-mode .guest-copy{max-width:none}
+  body.guest-mode .guest-brandline{min-height:90px;gap:2px;align-items:center}
+  body.guest-mode .guest-copy h1{font-size:55px;letter-spacing:-3px}
+  body.guest-mode .bird-art{width:88px;height:68px;flex-basis:88px;margin-left:0}
+  body.guest-mode .landing-bird{width:78px}
+  body.guest-mode .bird-flight-lines{left:-26px;top:-9px;width:136px;height:76px}
+  body.guest-mode .bird-flight-lines path{stroke-width:1.55;stroke-dasharray:13 10}
+  body.guest-mode .guest-message{margin-top:24px;margin-bottom:25px;padding:18px 15px;border-radius:16px}
+  body.guest-mode .guest-message p{font-size:17px;line-height:1.55}
+  body.guest-mode .guest-actions{width:100%}
+  body.guest-mode .guest-actions .btn{flex:0 0 auto}
+  body.guest-mode .ai-tagline{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){body.guest-mode .landing-bird,body.guest-mode .bird-flight-lines path{animation:none}}
+
+/* V16.4 — World-class landing composition: restraint, hierarchy, atmosphere, and motion */
+body.guest-mode{
+  --landing-ink:#17345c;
+  --landing-indigo:#5b51c9;
+  --landing-lavender:#7a70d8;
+  --landing-sky:#eaf4ff;
+  --landing-card:rgba(255,255,255,.48);
+  background:#eef6ff;
+}
+body.guest-mode .topbar{
+  height:64px;
+  background:rgba(250,252,255,.76);
+  border-bottom:1px solid rgba(75,91,130,.09);
+  backdrop-filter:blur(18px) saturate(120%);
+}
+body.guest-mode .topbar-inner{
+  max-width:1280px;
+  padding:0 28px;
+}
+body.guest-mode .brand{font-size:23px;letter-spacing:-.9px}
+body.guest-mode .account-mini{
+  min-height:42px;
+  padding:0 14px;
+  border-radius:999px;
+  color:#405bc3;
+  transition:background .2s ease,transform .2s ease;
+}
+body.guest-mode .account-mini:hover{background:rgba(79,70,165,.07);transform:translateY(-1px)}
+body.guest-mode .shell{max-width:none;width:100%;}
+body.guest-mode .timeline{min-height:calc(100dvh - 64px);width:100%;display:flex;align-items:stretch;justify-content:center;overflow:hidden}
+body.guest-mode .guest-home{
+  width:100%;
+  max-width:1360px;
+  min-height:calc(100dvh - 64px);
+  margin:0 auto;
+  padding:clamp(48px,7vh,86px) clamp(28px,6vw,92px) clamp(46px,7vh,82px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  position:relative;
+  background:
+    radial-gradient(ellipse 30% 20% at 76% 5%,rgba(255,220,118,.34),transparent 72%),
+    radial-gradient(ellipse 38% 28% at 6% 30%,rgba(255,255,255,.82),transparent 70%),
+    radial-gradient(ellipse 42% 34% at 91% 83%,rgba(218,211,255,.58),transparent 70%),
+    linear-gradient(145deg,#f5faff 0%,#eaf4ff 39%,#e5e8fb 72%,#f5f0ff 100%);
+}
+body.guest-mode .guest-home:before{
+  width:520px;height:190px;left:-180px;top:8%;
+  background:rgba(255,255,255,.54);filter:blur(28px);
+}
+body.guest-mode .guest-home:after{
+  width:620px;height:220px;right:-180px;bottom:-80px;
+  background:rgba(194,190,244,.28);filter:blur(32px);
+}
+body.guest-mode .guest-home > *{position:relative;z-index:2}
+body.guest-mode .guest-copy{
+  width:min(100%,980px);
+  max-width:980px;
+  margin:0 auto;
+}
+body.guest-mode .guest-brandline{
+  min-height:128px;
+  width:max-content;
+  max-width:100%;
+  gap:12px;
+  align-items:center;
+  position:relative;
+}
+body.guest-mode .guest-copy h1{
+  margin:0;
+  font-size:clamp(70px,7.1vw,104px);
+  line-height:.86;
+  letter-spacing:-4.8px;
+  font-family:"Snell Roundhand","Segoe Script","Brush Script MT",cursive;
+  font-weight:500;
+  text-shadow:0 2px 0 rgba(255,255,255,.55),0 14px 35px rgba(53,66,124,.07);
+}
+body.guest-mode .guest-copy h1 span{color:var(--landing-ink)}
+body.guest-mode .guest-copy h1 em{color:var(--landing-indigo)}
+body.guest-mode .bird-art{
+  width:104px;height:78px;flex:0 0 104px;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;margin-left:2px;transform:translateY(2px);
+}
+body.guest-mode .bird-picture{display:flex;align-items:center;justify-content:center;position:relative;z-index:2;width:100%;height:100%}
+body.guest-mode .landing-bird{
+  width:86px;height:auto;display:block;background:transparent;
+  filter:drop-shadow(0 7px 9px rgba(62,52,125,.10)) saturate(.86) contrast(.99);
+  animation:bird-cruise-v164 2.9s cubic-bezier(.42,0,.58,1) infinite;
+  transform-origin:50% 54%;
+}
+body.guest-mode .bird-flight-lines{
+  position:absolute;left:-52px;top:-24px;width:208px;height:108px;
+  overflow:visible;z-index:0;
+  transform:rotate(-2deg);
+}
+body.guest-mode .bird-flight-lines path{
+  fill:none;stroke:#7776c7;stroke-linecap:round;
+  stroke-width:1.55;stroke-dasharray:11 15;
+  animation:trail-flow-v164 4.4s linear infinite;
+  opacity:.30;
+}
+body.guest-mode .bird-flight-lines path:nth-child(2){opacity:.22;stroke-width:1.35;animation-duration:5.1s;animation-delay:-1.1s}
+body.guest-mode .bird-flight-lines path:nth-child(3){opacity:.15;stroke-width:1.15;animation-duration:5.8s;animation-delay:-2.2s}
+body.guest-mode .guest-message{
+  width:min(100%,690px);
+  margin:30px 0 27px;
+  padding:23px 28px;
+  border:0;border-radius:20px;
+  background:linear-gradient(135deg,rgba(255,255,255,.57),rgba(255,255,255,.30));
+  backdrop-filter:blur(12px) saturate(115%);
+  box-shadow:0 18px 46px rgba(61,74,135,.065),inset 0 1px 0 rgba(255,255,255,.62);
+}
+body.guest-mode .guest-message p{
+  margin:0;color:#314d74;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:clamp(18px,1.45vw,21px);
+  line-height:1.67;letter-spacing:-.12px;
+}
+body.guest-mode .guest-actions{gap:12px;margin-top:0}
+body.guest-mode .guest-actions .btn{
+  min-width:116px;min-height:46px;padding:0 19px;border-radius:999px;
+  box-shadow:0 7px 20px rgba(66,77,155,.10);
+}
+body.guest-mode .guest-actions .btn:not(.ghost){background:linear-gradient(135deg,#566ed8,#6657c9)}
+body.guest-mode .guest-actions .btn:not(.ghost):hover{background:linear-gradient(135deg,#4c65cf,#5d4ebf);transform:translateY(-1px)}
+body.guest-mode .guest-actions .btn.ghost{
+  background:rgba(255,255,255,.38);
+  border-color:rgba(84,91,151,.16);
+  color:#5364bf;
+}
+body.guest-mode .guest-actions .btn.ghost:hover{background:rgba(255,255,255,.62);transform:translateY(-1px)}
+body.guest-mode .guest-trust{
+  margin-top:18px;color:#5d6e87;font-size:13px;line-height:1.4;gap:8px;
+}
+body.guest-mode .guest-trust::before{
+  width:20px;height:20px;background:rgba(255,255,255,.58);color:#5f61c7;box-shadow:0 4px 12px rgba(69,70,135,.08)
+}
+body.guest-mode .ai-tagline{
+  margin-top:11px;padding:7px 12px;
+  border:1px solid rgba(87,78,183,.17);
+  background:rgba(247,246,255,.52);
+  color:#554bb1;box-shadow:0 8px 22px rgba(69,68,145,.055);
+  font-size:12px;letter-spacing:.16px;
+}
+@keyframes bird-cruise-v164{
+  0%,100%{transform:translate3d(-2px,2px,0) rotate(-1.2deg) scale(1)}
+  20%{transform:translate3d(3px,-4px,0) rotate(.5deg) scale(1.015)}
+  42%{transform:translate3d(7px,1px,0) rotate(1.6deg) scale(.995)}
+  64%{transform:translate3d(2px,-5px,0) rotate(.2deg) scale(1.01)}
+  82%{transform:translate3d(-1px,-1px,0) rotate(-.6deg) scale(1)}
+}
+@keyframes trail-flow-v164{to{stroke-dashoffset:-84}}
+@media(max-width:980px) and (min-width:681px){
+  body.guest-mode .guest-home{padding:56px 42px 64px}
+  body.guest-mode .guest-copy{max-width:850px}
+  body.guest-mode .guest-copy h1{font-size:76px}
+  body.guest-mode .bird-art{width:96px;flex-basis:96px}
+  body.guest-mode .landing-bird{width:78px}
+  body.guest-mode .bird-flight-lines{left:-46px;width:190px;height:100px}
+}
+@media(max-width:680px){
+  body.guest-mode .topbar{height:54px}
+  body.guest-mode .topbar-inner{padding:0 16px}
+  body.guest-mode .timeline{min-height:calc(100dvh - 54px)}
+  body.guest-mode .guest-home{
+    min-height:calc(100dvh - 54px);padding:28px 18px 42px;align-items:flex-start;
+    background:
+      radial-gradient(ellipse 55% 20% at 82% 5%,rgba(255,220,118,.25),transparent 76%),
+      radial-gradient(ellipse 65% 30% at 8% 28%,rgba(255,255,255,.78),transparent 72%),
+      linear-gradient(160deg,#f3f8ff 0%,#e9f3ff 44%,#e9e7fb 100%);
+  }
+  body.guest-mode .guest-copy{max-width:none;padding-top:10px}
+  body.guest-mode .guest-brandline{width:100%;min-height:84px;gap:2px;align-items:center}
+  body.guest-mode .guest-copy h1{font-size:56px;letter-spacing:-3.2px;line-height:.88}
+  body.guest-mode .bird-art{width:76px;height:60px;flex-basis:76px;margin-left:0}
+  body.guest-mode .landing-bird{width:62px}
+  body.guest-mode .bird-flight-lines{left:-23px;top:-8px;width:124px;height:70px;transform:rotate(-1deg)}
+  body.guest-mode .bird-flight-lines path{stroke-width:1.15;stroke-dasharray:8 12}
+  body.guest-mode .guest-message{margin-top:25px;margin-bottom:24px;padding:18px 16px;border-radius:17px;width:100%}
+  body.guest-mode .guest-message p{font-size:17px;line-height:1.58}
+  body.guest-mode .guest-actions{width:100%;gap:9px}
+  body.guest-mode .guest-actions .btn{min-width:0;min-height:46px;padding:0 16px}
+  body.guest-mode .guest-trust{margin-top:16px;font-size:12px}
+  body.guest-mode .ai-tagline{font-size:11.5px;padding:6px 10px;margin-top:9px}
+}
+@media(max-width:380px){
+  body.guest-mode .guest-copy h1{font-size:51px}
+  body.guest-mode .bird-art{width:68px;flex-basis:68px}
+  body.guest-mode .landing-bird{width:56px}
+  body.guest-mode .guest-message p{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  body.guest-mode .landing-bird,body.guest-mode .bird-flight-lines path{animation:none}
+}
