@@ -1,7 +1,5 @@
-# mindRID V16.5 — World-class Landing Composition
+# mindRID V17.3 — Portal refinement
 
-V16.5 is based on V16.3 and preserves its reliability fixes. This release focuses on a refined landing-page composition: restrained bird scale, transparent animated WebP/GIF assets, elegant flight trails, improved hierarchy, atmospheric color, responsive spacing, and reduced-motion support.
+A conservative refinement of V17.1. The landing page is intentionally unchanged. This build fixes the `history.replaceState` shadowing bug and reduces clutter on the signed-in Home page by removing its redundant quick-link strip. Existing feature and database files are retained.
 
-
-## V17 — Thought Discovery
-V17 introduces the first approved exclusivity layer: Related Reflections, Develop this thought, Has your thinking changed?, thought-based People discovery, Why am I seeing this?, and Surprise my mind. Run `MIGRATION-V17.sql` once on the existing Supabase project.
+See `DEPLOY-V17.3.md` before publishing and `AUDIT-V17.md` for the earlier audit context.
